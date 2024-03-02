@@ -3,17 +3,16 @@ name: Build and deploy an app to AKS with Helm
 on:
   push:
     branches:
-      - "main"
+      - "*"
   workflow_dispatch:
 
 env:
-  DOCKERHUB_USERNAME: "your-dockerhub-username"
+  DOCKERHUB_USERNAME: "francisjoy"
   DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
-  CONTAINER_NAME: "your-container-name"
-  RESOURCE_GROUP: "your-resource-group"
-  CLUSTER_NAME: "your-cluster-name"
+  CONTAINER_NAME: "sample-nodejs"
+  RESOURCE_GROUP: "sample-rg"
+  CLUSTER_NAME: "sample-aks"
   CHART_PATH: "your-chart-path"
-  CHART_OVERRIDE_PATH: "your-chart-override-path"
 
 jobs:
   buildImage:
@@ -28,11 +27,12 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # Log in to Docker Hub
+      - name: Set DEPLOYED_FROM environment variable
+        run: echo "DEPLOYED_FROM=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ env.DOCKERHUB_USERNAME }} --password-stdin
 
-      # Build and push Docker image to Docker Hub
       - name: Build and push image to Docker Hub
         run: |
           docker build -t ${{ env.DOCKERHUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ github.sha }} .
@@ -52,7 +52,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
-      # Log in to Azure
       - name: Azure login
         uses: azure/login@v1.4.6
         with:
@@ -60,13 +59,11 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # Use kubelogin to configure kubeconfig for Azure auth
       - name: Set up kubelogin for non-interactive login
         uses: azure/use-kubelogin@v1
         with:
           kubelogin-version: 'v0.0.25'
 
-      # Get K8s context
       - name: Get K8s context
         uses: azure/aks-set-context@v3
         with:
@@ -75,19 +72,16 @@ jobs:
           admin: 'false'
           use-kubelogin: 'true'
 
-      # Run Helm to create manifest files
       - name: Bake deployment
         uses: azure/k8s-bake@v2
         with:
           renderEngine: "helm"
           helmChart: ${{ env.CHART_PATH }}
-          overrideFiles: ${{ env.CHART_OVERRIDE_PATH }}
           overrides: |
-            replicas:2
+            replicas:1
           helm-version: "latest"
         id: bake
 
-      # Deploy application based on manifest files from previous step
       - name: Deploy application
         uses: Azure/k8s-deploy@v4
         with:
