@@ -78,7 +78,9 @@ jobs:
           renderEngine: "helm"
           helmChart: ${{ env.CHART_PATH }}
           overrides: |
-            replicas:1
+            image:
+              repository: ${{ env.DOCKERHUB_USERNAME }}/${{ env.CONTAINER_NAME }}
+              tag: ${{ github.sha }}
           helm-version: "latest"
         id: bake
 
