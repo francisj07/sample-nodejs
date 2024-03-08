@@ -73,7 +73,7 @@ jobs:
           use-kubelogin: 'true'
 
       - name: Bake deployment
-        uses: azure/k8s-bake@v2
+        uses: azure/k8s-bake@v3
         with:
           renderEngine: "helm"
           helmChart: ${{ env.CHART_PATH }}
