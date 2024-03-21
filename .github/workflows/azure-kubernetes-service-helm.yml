@@ -85,7 +85,7 @@ jobs:
         id: bake
 
       - name: Deploy application
-        uses: Azure/k8s-deploy@v4
+        uses: Azure/k8s-deploy@v5
         with:
           action: deploy
           manifests: ${{ steps.bake.outputs.manifestsBundle }}
